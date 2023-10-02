@@ -1,5 +1,5 @@
 const amqp = require('amqplib');
-const { MESSAGE_BROKER_URL , EXCHANGE_NAME, } = require('../config/serverConfig');
+const { MESSAGE_BROKER_URL, EXCHANGE_NAME, } = require('../config/serverConfig');
 const createChannel = async () => {
     try {
         const connection = await amqp.connect(MESSAGE_BROKER_URL);
@@ -14,12 +14,14 @@ const createChannel = async () => {
 const subscribeMessage = async (channel, service, binding_key) => {
 
     try {
-        const applicationQueue = await channel.assertQueue("QUEUE_NAME");
+        const applicationQueue = await channel.assertQueue("REMINDER_QUEUE");
         channel.bindQueue(applicationQueue.queue, EXCHANGE_NAME, binding_key);
 
         channel.consume(applicationQueue.queue, (message) => {
-            console.log(`Received message from ${service} service`);
+            console.log(`Received message from service`);
             console.log(message.content.toString());
+            const payload = JSON.parse(message.content.toString()); 
+            service(payload) 
             channel.ack(message);
         });
     } catch (error) {
@@ -29,9 +31,9 @@ const subscribeMessage = async (channel, service, binding_key) => {
 }
 const publishMessage = async (channel, binding_key, message) => {
     try {
-        await channel.assertQueue("QUEUE_NAME");
+        await channel.assertQueue("REMINDER_QUEUE");
         await channel.publish(EXCHANGE_NAME, binding_key, Buffer.from(message));
-        console.log(`Message published to ${service} service`);
+        console.log(`Message published to service`);
     } catch (error) {
         throw error;
     }
